@@ -12,7 +12,7 @@ GPT (Generative Pre-trained Transformer) represents a significant advancement in
 - Transformer blocks
 - Output projection layer
 
-The model is trained on a corpus of text (in this case, Alice in Wonderland) to predict the next token in a sequence.
+The model is trained on a corpus of text (in this case, Alice in Wonderland - avaliable at https://www.gutenberg.org/cache/epub/11/pg11.txt) to predict the next token in a sequence.
 
 ## Architecture Details
 
