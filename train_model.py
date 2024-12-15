@@ -8,6 +8,8 @@ import json
 from tokeniser import load_tokeniser, encode_text, decode_text, clean_dataset
 from model import GPT, GPTConfig 
 
+from utils import print_model_structure
+
 class TextDataset(Dataset):
     def __init__(self, text_path, tokeniser, seq_length=128):
         self.tokeniser = tokeniser
@@ -92,7 +94,7 @@ def save_checkpoint(model, optimizer, scheduler, epoch, loss, save_dir):
 def main():
     # Training settings
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    epochs = 10
+    epochs = 50
     batch_size = 64
     seq_length = 128
     learning_rate = 3e-4
@@ -120,6 +122,10 @@ def main():
     model = GPT(config)
     model = model.to(device)
     
+    print('-' * 50)
+    print_model_structure(model, config)
+    print('-' * 50)
+    
     # Initialize optimizer and scheduler
     optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
@@ -137,18 +143,7 @@ def main():
         if avg_loss < best_loss:
             best_loss = avg_loss
             save_checkpoint(model, optimizer, scheduler, epoch, avg_loss, save_dir)
-        
-        # Generate sample text
-        if (epoch + 1) % 1 == 0:
-            model.eval()
-            with torch.no_grad():
-                # Generate some sample text
-                context = torch.zeros((1, 1), dtype=torch.long, device=device)
-                generated = model.generate(context, max_new_tokens=100, temperature=0.8)
-                generated_text = decode_text(generated, tokeniser)
-                print(f"Epoch {epoch + 1} | Generated text: {generated_text}")
-
-    return
+            
 
 def debug():
     import debugpy

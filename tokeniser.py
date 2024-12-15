@@ -11,7 +11,15 @@ def clean_dataset(dataset):
 def basic_tokenize(text):
     text = text.lower()
     text = re.sub(r'\n', ' ', text)
+
+    text = re.sub(r'([.,!?;])', r' \1 ', text)
+    text = re.sub(r'(["\'])', r' \1 ', text)
+    
     text = re.sub(r'[^a-z0-9.,!?;\'\" ]', ' ', text)
+    
+    text = re.sub(r'\s+', ' ', text)
+    text = text.strip()
+    
     tokens = text.split()
     return tokens
 

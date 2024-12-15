@@ -63,7 +63,7 @@ def generate_text(model, tokenizer, prompt="", max_tokens=100, temperature=0.8, 
 
 def main():
     # Settings
-    checkpoint_path = './models/checkpoints/checkpoint_epoch_9.pt'
+    checkpoint_path = './models/checkpoints/checkpoint_epoch_13.pt'
     tokenizer_path = './models/alice_in_wonderland_tokeniser.json'
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     

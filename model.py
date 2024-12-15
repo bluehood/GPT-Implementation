@@ -7,32 +7,43 @@ class MultiHeadAttention(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.num_heads = config.num_heads
-        self.head_size = config.n_embd // config.num_heads
+        self.n_embd = config.n_embd
         self.dropout = config.dropout
         
-        self.query = nn.Linear(config.n_embd, config.n_embd)
-        self.key = nn.Linear(config.n_embd, config.n_embd)
-        self.value = nn.Linear(config.n_embd, config.n_embd)
-        self.proj = nn.Linear(config.n_embd, config.n_embd)
+        self.query_projs = nn.ModuleList([
+            nn.Linear(config.n_embd, config.n_embd) for _ in range(config.num_heads)
+        ])
+        self.key_projs = nn.ModuleList([
+            nn.Linear(config.n_embd, config.n_embd) for _ in range(config.num_heads)
+        ])
+        self.value_projs = nn.ModuleList([
+            nn.Linear(config.n_embd, config.n_embd) for _ in range(config.num_heads)
+        ])
+        
+        self.proj = nn.Linear(config.n_embd * config.num_heads, config.n_embd)
         
         self.register_buffer("mask", torch.tril(torch.ones(config.block_size, config.block_size)))
 
     def forward(self, x):
         B, T, C = x.size()
+    
+        head_outputs = []
+        for head in range(self.num_heads):
+            q = self.query_projs[head](x)
+            k = self.key_projs[head](x)
+            v = self.value_projs[head](x)
+            
+            # Compute attention scores for this head
+            att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(self.n_embd))
+            att = att.masked_fill(self.mask[:T, :T] == 0, float('-inf'))
+            att = F.softmax(att, dim=-1)
+            att = F.dropout(att, p=self.dropout, training=self.training)
+            head_output = att @ v
+            head_outputs.append(head_output)
         
-        q = self.query(x).view(B, T, self.num_heads, self.head_size).transpose(1, 2)
-        k = self.key(x).view(B, T, self.num_heads, self.head_size).transpose(1, 2)
-        v = self.value(x).view(B, T, self.num_heads, self.head_size).transpose(1, 2)
+        multi_head_output = torch.cat(head_outputs, dim=-1) 
         
-        att = (q @ k.transpose(-2, -1)) * (1.0 / math.sqrt(k.size(-1)))
-        att = att.masked_fill(self.mask[:T, :T] == 0, float('-inf'))
-        att = F.softmax(att, dim=-1)
-        att = F.dropout(att, p=self.dropout, training=self.training)
-        
-        y = att @ v
-        y = y.transpose(1, 2).contiguous().view(B, T, C)
-        
-        y = self.proj(y)
+        y = self.proj(multi_head_output)
         return y
 
 class FeedForward(nn.Module):
